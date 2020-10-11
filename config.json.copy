@@ -1,4 +1,6 @@
 {
 	"token" : "",
-	"commandPrefix" : "!necro"
+	"prefix" : "!necro",
+	"data_json_path": "data.json",
+	"alias_db_path": "alias.db"
 }
