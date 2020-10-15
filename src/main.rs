@@ -1,9 +1,9 @@
-use rusqlite::{Connection};
-use regex::{Regex}; 
+use rusqlite::Connection;
+use regex::Regex; 
 use serenity::{async_trait, client::Client, client::Context, client::EventHandler, model::channel::Message, model::gateway::Activity, model::gateway::Ready, prelude::TypeMapKey};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::{collections::HashMap, fs::File, io::BufReader,  sync::Arc};
-use tokio::{sync::Mutex};
+use tokio::sync::Mutex;
 
 // TypeMapKeys /////////////////////////////////////////////////////////////////////////////////////////////
 struct CommandMap;
@@ -232,7 +232,7 @@ struct CmdGetAlias;
                 .expect("[CmdGetAlias] AliasDatabase not set!")
                 .lock()
                 .await;
-
+             
             let mut stmt = alias_db.prepare("SELECT value FROM alias WHERE key = (?)")
                     .expect("[CmdGetAlias] Problem preparing query");
             
