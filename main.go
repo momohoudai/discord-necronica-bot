@@ -46,7 +46,7 @@ func ReadyHandler(Ses *discordgo.Session, Ready *discordgo.Ready) {
 		fmt.Println("Error attempting to set my status")
 	}
 	servers := Ses.State.Guilds
-	fmt.Printf("CocBot has started on %d servers\n", len(servers))
+	fmt.Printf("NecronicaBot has started on %d servers\n", len(servers))
 }
 
 func Panik(Format string, a ...interface{}) {
