@@ -15,110 +15,107 @@ import (
 )
 
 var (
-	GlobalBotId       string
-	GlobalArgSplitter *regexp.Regexp
-    GlobalDictionary  map[string]string
-    GlobalDb     *bolt.DB 
+	global_bot_id       string
+	global_arg_splitter *regexp.Regexp
+    global_dictionary  map[string]string
+    global_db     *bolt.DB 
 )
 
-func MessageHandler(Ses *discordgo.Session, Msg *discordgo.MessageCreate) {
-	User := Msg.Author
-	if User.ID == GlobalBotId || User.Bot {
+func handle_message(ses *discordgo.Session, msg *discordgo.MessageCreate) {
+	user := msg.Author
+	if user.ID == global_bot_id || user.Bot {
 		return
 	}
 
-	// For message parsing
-	UpdateWordCount(Msg)
-
 	// handle prefix
-	Content := strings.ToLower(Msg.Content)
-	if strings.HasPrefix(Content, "!necro") {
+	content := strings.ToLower(msg.Content)
+	if strings.HasPrefix(content, "!necro") {
 		go func() {
-			defer Kalm(Ses, Msg, "ProcCommands")
-			ProcCommands(Ses, Msg)
+			defer kalm(ses, msg, "execute_commands")
+			execute_commands(ses, msg)
 		}()
 	} 
 }
 
-func ReadyHandler(Ses *discordgo.Session, Ready *discordgo.Ready) {
-	Err := Ses.UpdateListeningStatus("'!necro help'")
-	if Err != nil {
+func handle_ready(ses *discordgo.Session, Ready *discordgo.Ready) {
+	err := ses.UpdateListeningStatus("'!necro help'")
+	if err != nil {
 		fmt.Println("Error attempting to set my status")
 	}
-	servers := Ses.State.Guilds
+	servers := ses.State.Guilds
 	fmt.Printf("NecronicaBot has started on %d servers\n", len(servers))
 }
 
-func Panik(Format string, a ...interface{}) {
+func panik(Format string, a ...interface{}) {
 	panic(fmt.Sprintf(Format, a...))
 }
 
-func Kalm(Ses *discordgo.Session, Msg *discordgo.MessageCreate, Name string) {
+func kalm(ses *discordgo.Session, msg *discordgo.MessageCreate, Name string) {
 	if R := recover(); R != nil {
 		fmt.Printf("[%s] Recovered: %v\n", Name, R)
-		Ses.ChannelMessageSend(Msg.ChannelID, MsgGenericFail)
+		ses.ChannelMessageSend(msg.ChannelID, MSG_GENERIC_FAIL)
 	}
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	Token, ReadFileErr := ioutil.ReadFile("TOKEN")
-	if ReadFileErr != nil {
-		Panik("Cannot read or find TOKEN file\n")
+	token, read_file_err := ioutil.ReadFile("TOKEN")
+	if read_file_err != nil {
+		panik("Cannot read or find TOKEN file\n")
 	}
 
-	InitCommands()
+	init_commands()
     
     // Configure Dictionary
-    JsonFile, OpenErr := os.Open("data.json")
-	if OpenErr != nil {
-        Panik("Cannot open data.json")
+    json_file, open_err := os.Open("data.json")
+	if open_err != nil {
+        panik("Cannot open data.json")
 	}
-	defer JsonFile.Close()
+	defer json_file.Close()
 
-    JsonBytes, ReadAllErr := ioutil.ReadAll(JsonFile)
-    if ReadAllErr != nil {
-        Panik("Cannot read data.json");
+    json_bytes, read_all_err := ioutil.ReadAll(json_file)
+    if read_all_err != nil {
+        panik("Cannot read data.json");
     }
 
-    UnmarshalErr := json.Unmarshal(JsonBytes, &GlobalDictionary)
-    if UnmarshalErr != nil {
-        Panik("Cannot unmarshal data.json")
+    unmarshal_err := json.Unmarshal(json_bytes, &global_dictionary)
+    if unmarshal_err != nil {
+        panik("Cannot unmarshal data.json")
     }
 
     // Configure Alias DB
-    var DbOpenErr error
-    GlobalDb, DbOpenErr = bolt.Open("./db", 0666, nil)
-    if DbOpenErr != nil {
-        Panik("Cannot open database: %s", DbOpenErr)
+    var db_open_err error
+    global_db, db_open_err = bolt.Open("./db", 0666, nil)
+    if db_open_err != nil {
+        panik("Cannot open database: %s", db_open_err)
     }
-    defer GlobalDb.Close()
-    GlobalDb.Update(func (Tx *bolt.Tx) error {
-        _, Err := Tx.CreateBucketIfNotExists([]byte("alias"))
-        if Err != nil {
+    defer global_db.Close()
+    global_db.Update(func (Tx *bolt.Tx) error {
+        _, err := Tx.CreateBucketIfNotExists([]byte("alias"))
+        if err != nil {
             return fmt.Errorf("Cannot create 'alias' bucket")
         }
         return nil
     })
 
-	// Configure Discord
-	Discord, Err := discordgo.New("Bot " + string(Token))
-	if Err != nil {
-		Panik("Cannot initialize discord: %s\n", Err.Error())
+	// Configure discord
+	discord, err := discordgo.New("Bot " + string(token))
+	if err != nil {
+		panik("Cannot initialize discord: %s\n", err.Error())
 	}
-	User, Err := Discord.User("@me")
-	if Err != nil {
-		Panik("Error retrieving account: %s\n", Err.Error())
+	user, err := discord.User("@me")
+	if err != nil {
+		panik("Error retrieving account: %s\n", err.Error())
 	}
-	GlobalBotId = User.ID
-	Discord.AddHandler(MessageHandler)
-	Discord.AddHandler(ReadyHandler)
+	global_bot_id = user.ID
+	discord.AddHandler(handle_message)
+	discord.AddHandler(handle_ready)
 
-	Err = Discord.Open()
-	if Err != nil {
-		Panik("Error retrieving account: %s\n", Err.Error())
+	err = discord.Open()
+	if err != nil {
+		panik("Error retrieving account: %s\n", err.Error())
 	}
-	defer Discord.Close()
+	defer discord.Close()
 
 	<-make(chan struct{})
 
