@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-const MSG_VERSION = "I'm NecronicaBot v7.0.0, written in Golang!"
+const MSG_VERSION = "I'm NecronicaBot v7.0.1, written in Golang!"
 
 const MSG_ADD_ALIAS_TARGET_NOT_FOUND = "Target not found! Are you sure the target name is correct?"
 const MSG_ADD_ALIAS_SUCCESS = "Alias added! **%s** is now also known as **%s**!"
